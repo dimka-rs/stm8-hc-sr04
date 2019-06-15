@@ -21,6 +21,11 @@ Clock
 - CPU DIV = 1
 - CPU CLK = 2 MHz
 
+UART
+----
+- PD5 - TX
+- PD6 - RX
+
 GPIO
 ----
 - PB5 - LED

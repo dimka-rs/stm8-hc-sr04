@@ -1,5 +1,6 @@
 #include "stm8s.h"
 #include "main.h"
+#include "stdio.h"
 
 void init_gpio()
 {
@@ -55,28 +56,37 @@ void init_tim4()
 void init_tim2()
 {
     // Timer 2
-    TIM2->PSCR = 1; // 2^1
-    
-    // Select active input
-    TIM2->CCMR2 |= (TIM2_CCMR_CCxS & 1); // input, TI2FP2
-    
+
+    //only reset counter on UE
+    TIM2->CR1 |= TIM2_CR1_UDIS;
+
+    // Prescaler = 2^1 = 1
+    TIM2->PSCR = 1;
+
+    // connect input 2 to channel 1, TI2FP1
+    TIM2->CCMR1 |= (TIM2_CCMR_CCxS & 2);
+    // connect input 2 to channel 2, TI2FP2
+    TIM2->CCMR2 |= (TIM2_CCMR_CCxS & 1);
+
     // Program filter
     // none by default
     // TIM2->CCMR2 bits IC2F
 
     // Select edge
-    // rising by default
-    // TIM2->CCER1 bit CC2P
+    // ch 1 rising by default
+    TIM2->CCER1 &= ~TIM2_CCER1_CC1P;
+    // ch 2 falling
+    TIM2->CCER1 |= TIM2_CCER1_CC2P;
 
     // Program prescaler
     // none by default
     // TIM2->CCMR2 bits IC2PSC
 
     // Enable capture
+    TIM2->CCER1 |= TIM2_CCER1_CC1E;
     TIM2->CCER1 |= TIM2_CCER1_CC2E;
 
     // Enable CC2 interrupt
+    TIM2->IER |= TIM2_IER_CC1IE;
     TIM2->IER |= TIM2_IER_CC2IE;
-
-    TIM2->CR1 |= TIM2_CR1_CEN;
 }

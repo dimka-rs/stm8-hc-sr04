@@ -6,8 +6,8 @@
 
 /* Private defines -----------------------------------------------------------*/
 volatile uint8_t tim4flag = 1;
-volatile uint8_t echoh = 0;
-volatile uint8_t echol = 0;
+volatile uint16_t start = 0;
+volatile uint16_t stop = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -20,24 +20,24 @@ void main(void)
     init_gpio();
     init_tim2();
 
-    enableInterrupts();
+    uint8_t * uid = (uint8_t *) 0x4865;
+    uint8_t uid_size = 12;
+    printf("\r\nUID: ");
+    for (int i = 0; i < uid_size; uid++, i++) printf("%02X",*uid);
+    printf("\r\n");
 
-    printf("Hello\r\n");
+    enableInterrupts();
     while (1)
     {
         while (tim4flag);
         tim4flag = 1;
-        printf("TIM4\r\n");
-
         LED_PORT->ODR &= ~(LED_PIN); // LED on
         TRIG_PORT->ODR |= TRIG_PIN; // TRIG high
-
         // ~10 us delay: 20 ops @ 2 MHz, 4 cycles * 5 ops
-        for(volatile int8_t i = 0; i < 4; i++);
+        for(volatile int8_t i = 0; i < 5; i++);
         //__asm__("ldw X, 20\n nop\n 00001$:\n decw X\n jrne 00001$\n nop\n ");
-
         TRIG_PORT->ODR &= ~(TRIG_PIN); // TRIG low
-        LED_PORT->ODR |= LED_PIN; // LED off
+        TIM2->CR1 |= TIM2_CR1_CEN; // start timer 2
     }
 }
 
@@ -47,7 +47,6 @@ void main(void)
 void tim4_isr(void) __interrupt(ITC_IRQ_TIM4_OVF) {
     static uint8_t tim4cnt = 0;
 
-    //printf("!");
     tim4cnt++;
     // timer overflows at 122 Hz
     if(tim4cnt >= 122){
@@ -59,18 +58,26 @@ void tim4_isr(void) __interrupt(ITC_IRQ_TIM4_OVF) {
 }
 
 void tim2_isr(void) __interrupt(ITC_IRQ_TIM2_CAPCOM) {
-    // Read CCR
-    echoh = TIM2->CCR2H;
-    echol = TIM2->CCR2L;
-    printf("%u %u\r\n", echoh, echol);
-    // reset counter
-    //TIM2->CR1 &= ~TIM2_CR1_CEN;
-    //TIM2->CNTRH = 0;
-    //TIM2->CNTRL = 0;
-    TIM2->EGR |= TIM2_EGR_UG; //update values
-    //TIM2->CR1 |= TIM2_CR1_CEN;
-    // Clear CC2I flag
-    TIM2->SR1 &= (~TIM2_SR1_CC2IF);
+    // get value on rising edge
+    if(TIM2->SR1 & TIM2_SR1_CC1IF)
+    {
+        start = (TIM2->CCR1H) * 256;
+        start += TIM2->CCR1L;
+        //TIM2->EGR |= TIM2_EGR_UG; // reset counter
+    }
+
+    // read counter on falling edge
+    if(TIM2->SR1 & TIM2_SR1_CC2IF)
+    {
+        stop = (TIM2->CCR2H) * 256;
+        stop += TIM2->CCR2L;
+        printf("%u\r\n", (stop-start)/58);
+        LED_PORT->ODR |= LED_PIN; // LED off
+        TIM2->CR1 &= ~TIM2_CR1_CEN; // stop timer 2
+    }
+
+    // clear all flags
+    TIM2->SR1 = 0;
 }
 
 /* Debug output */
