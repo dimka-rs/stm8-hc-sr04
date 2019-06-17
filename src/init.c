@@ -2,6 +2,12 @@
 #include "main.h"
 #include "stdio.h"
 
+void init_clock()
+{
+    CLK->CCOR |= (0b1100 << 1); // Fmaster
+    CLK->CCOR |= CLK_CCOR_CCOEN;
+}
+
 void init_gpio()
 {
     /* LED */
@@ -15,6 +21,12 @@ void init_gpio()
     TRIG_PORT->CR1 |= (uint8_t)TRIG_PIN;    // push-pull
     TRIG_PORT->CR2 &= (uint8_t)(~TRIG_PIN); // slow
     TRIG_PORT->DDR |= (uint8_t)TRIG_PIN;    // output
+
+    /* CCO */
+    CCO_PORT->ODR &= (uint8_t)(~CCO_PIN); // default low
+    CCO_PORT->CR1 |= (uint8_t)CCO_PIN;    // push-pull
+    CCO_PORT->CR2 |= (uint8_t)(CCO_PIN);  // fast
+    CCO_PORT->DDR |= (uint8_t)CCO_PIN;    // output
 }
 
 void init_uart()
@@ -57,11 +69,12 @@ void init_tim2()
 {
     // Timer 2
 
+    // Prescaler = 2^1 = 2, clk = 1 MHz
+    TIM2->PSCR = 1;
+    TIM2->EGR |= TIM2_EGR_UG;
+
     //only reset counter on UE
     TIM2->CR1 |= TIM2_CR1_UDIS;
-
-    // Prescaler = 2^1 = 1
-    TIM2->PSCR = 1;
 
     // connect input 2 to channel 1, TI2FP1
     TIM2->CCMR1 |= (TIM2_CCMR_CCxS & 2);

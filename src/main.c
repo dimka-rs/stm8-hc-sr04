@@ -18,6 +18,7 @@ void main(void)
     init_uart();
     init_tim4();
     init_gpio();
+    init_clock();
     init_tim2();
 
     uint8_t * uid = (uint8_t *) 0x4865;
@@ -31,7 +32,7 @@ void main(void)
     {
         while (tim4flag);
         tim4flag = 1;
-        LED_PORT->ODR &= ~(LED_PIN); // LED on
+        //LED_PORT->ODR &= ~(LED_PIN); // LED on
         TRIG_PORT->ODR |= TRIG_PIN; // TRIG high
         // ~10 us delay: 20 ops @ 2 MHz, 4 cycles * 5 ops
         for(volatile int8_t i = 0; i < 5; i++);
@@ -63,6 +64,7 @@ void tim2_isr(void) __interrupt(ITC_IRQ_TIM2_CAPCOM) {
     {
         start = (TIM2->CCR1H) * 256;
         start += TIM2->CCR1L;
+        LED_PORT->ODR |= LED_PIN; // LED off
         //TIM2->EGR |= TIM2_EGR_UG; // reset counter
     }
 
@@ -71,8 +73,9 @@ void tim2_isr(void) __interrupt(ITC_IRQ_TIM2_CAPCOM) {
     {
         stop = (TIM2->CCR2H) * 256;
         stop += TIM2->CCR2L;
-        printf("%u\r\n", (stop-start)/58);
-        LED_PORT->ODR |= LED_PIN; // LED off
+        LED_PORT->ODR &= ~LED_PIN; // LED on
+        printf("%uus %ucm\r\n", (stop-start), (stop-start)/58);
+        //LED_PORT->ODR |= LED_PIN; // LED off
         TIM2->CR1 &= ~TIM2_CR1_CEN; // stop timer 2
     }
 

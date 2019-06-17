@@ -21,6 +21,10 @@ Clock
 - CPU DIV = 1
 - CPU CLK = 2 MHz
 
+CCO
+---
+- PC4 - CCO
+
 UART
 ----
 - PD5 - TX

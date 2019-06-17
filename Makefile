@@ -22,7 +22,7 @@ SKIP_TRAPS = 0
 # set compiler path & parameters 
 CC_ROOT = $(HOME)/apps/sdcc/bin
 CC      = $(CC_ROOT)/sdcc
-CFLAGS  = -mstm8 -lstm8 --opt-code-size --std-c99
+CFLAGS  = -mstm8 -lstm8 --opt-code-size --std-sdcc99
 
 # required for some examples for STM8S EVAL board
 #CFLAGS += -DUSE_STM8_128_EVAL
